@@ -23,6 +23,14 @@ class Paddle():
         self.velocity = 15
         self.paddleX += self.velocity
 
+    def auto_left(self):
+        self.velocity = 30
+        self.paddleX += -self.velocity
+
+    def auto_right(self):
+        self.velocity = 30
+        self.paddleX += self.velocity
+
     def stop(self):
         self.velocity = 0
 
