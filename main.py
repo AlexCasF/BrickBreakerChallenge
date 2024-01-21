@@ -1,10 +1,23 @@
 import pygame
+from pygame import mixer
 from ball import Ball
 from level import Level
 from button import Button
 from paddle import Paddle
 
 pygame.init()
+mixer.init()
+
+# Load sound effects
+tick = mixer.Sound('select.wav')
+pong = mixer.Sound('pong.wav')
+bang = mixer.Sound('bang.wav')
+meep = mixer.Sound('over.wav')
+ciao = mixer.Sound('quit.wav')
+
+def play_sound(sound):
+    sound.play()
+
 
 scr_width = 800
 scr_height = 600
@@ -13,11 +26,41 @@ screen = pygame.display.set_mode((scr_width, scr_height))
 pygame.display.set_caption("Brick Breaker")
 
 
+def show_difficulty_selection(screen):
+    # Buttons:
+    turtle_button = Button(screen, (80, 240, 80), (0, 0, 0), (100, 200), (100, 50), "Slow", 20)
+    rabbit_button = Button(screen, (80, 240, 80), (0, 0, 0), (250, 200), (100, 50), "Medium", 20)
+    rocket_button = Button(screen, (80, 240, 80), (0, 0, 0), (400, 200), (100, 50), "Fast", 20)
+
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            elif event.type == pygame.MOUSEBUTTONUP:
+                if turtle_button.isOverMouse():
+                    play_sound(tick)
+                    return 2  # Slow speed
+                elif rabbit_button.isOverMouse():
+                    play_sound(tick)
+                    return 8  # Middle speed (default)
+                elif rocket_button.isOverMouse():
+                    play_sound(tick)
+                    return 16  # Fast speed
+
+        screen.fill((200, 200, 200))
+        turtle_button.show()
+        rabbit_button.show()
+        rocket_button.show()
+        pygame.display.update()
+
+
 def brick_collision(level: Level, ball: Ball):
-    for _, brick in enumerate(level.bricks):
-        x, y = brick
+    for brick_position in list(level.bricks_with_colors.keys()):
+        x, y = brick_position
         if (x < ball.ballX < (x + level.length) and
-                y > ball.ballY > (y + level.width)):
+                y < ball.ballY < (y + level.width)):
             # Invert the y direction
             ball.y_vel = -ball.y_vel
             center = x + level.length/2
@@ -27,8 +70,9 @@ def brick_collision(level: Level, ball: Ball):
             elif center < ball.ballX < (x + level.length):
                 ratio = (ball.ballX - center)/(level.length/2)
                 ball.x_vel += ball.max_x_vel * ratio
-
-            level.remove(brick)
+            level.remove(brick_position)
+            play_sound(bang)
+            break  # Break after removing the brick to avoid modifying the list during iteration
 
 
 def show_gameover():
@@ -41,11 +85,14 @@ def show_gameover():
 
 clock = pygame.time.Clock()
 background_color = (200, 200, 200)
-while True:
 
-    # initial positions
+while True:
+    # Show difficulty selection
+    ball_speed = show_difficulty_selection(screen)
+
+    # Initialize game objects with chosen ball speed
     paddle = Paddle(screen)
-    ball = Ball(paddle, screen)
+    ball = Ball(paddle, screen, ball_speed)
     level = Level(screen, background_color)
     over = False
     clicked_replay = False
@@ -90,6 +137,7 @@ while True:
             paddle.paddleX + paddle.length)
 
         if paddle.paddleY + 10 > ball_bottom > paddle.paddleY and ball_within_paddle:
+            play_sound(pong)
             ball.collision_change()
         # brick collision
         brick_collision(level, ball)
@@ -98,26 +146,47 @@ while True:
         paddle.boundries()
         if ball.ballY > scr_height:
             show_gameover()
+            play_sound(meep)
             over = True
             # REPLAY BUTTON
-            b = Button(screen, (80, 45, 200), (200, 250, 255),
-                       (260, 350), (150, 60), "REPLAY", 30)
-            state = 'original'
+            b_replay = Button(screen, (80, 45, 200), (200, 250, 255),
+                          (210, 350), (150, 60), "REPLAY", 30)
+            # QUIT BUTTON
+            b_quit = Button(screen, (255, 0, 0), (255, 255, 255),
+                            (400, 350), (150, 60), "QUIT", 30)
+
             while True:
-                b.show()
+                b_replay.show()
+                b_quit.show()
+
                 for event in pygame.event.get():
-                    if b.isOverMouse() == True:
-                        if event.type == pygame.MOUSEBUTTONUP:
-                            clicked_replay = True
-                        state = 'changed'
-                    elif b.isOverMouse() == False:
-                        state = 'original'
                     if event.type == pygame.QUIT:
                         pygame.quit()
-                if state == 'changed':
-                    b.changeColor((80, 240, 80), (14, 37, 100))
-                if clicked_replay == True:
+                        exit()
+
+                    if b_replay.isOverMouse() and event.type == pygame.MOUSEBUTTONUP:
+                        play_sound(tick)
+                        clicked_replay = True
+                    elif b_quit.isOverMouse() and event.type == pygame.MOUSEBUTTONUP:
+                        play_sound(ciao)
+                        pygame.time.delay(1000)
+                        pygame.quit()
+                        exit()
+
+                    # Update button appearance based on mouse hover
+                    if b_replay.isOverMouse():
+                        b_replay.changeColor((80, 240, 80), (14, 37, 100))
+                    else:
+                        b_replay.changeColor((80, 45, 200), (200, 250, 255))
+
+                    if b_quit.isOverMouse():
+                        b_quit.changeColor((255, 100, 100), (255, 255, 255))
+                    else:
+                        b_quit.changeColor((255, 0, 0), (255, 255, 255))
+
+                if clicked_replay:
                     break
+
                 pygame.display.update()
 
         screen.fill(background_color)

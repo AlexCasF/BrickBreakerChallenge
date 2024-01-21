@@ -6,18 +6,17 @@ from paddle import Paddle
 class Ball():
     color = (50, 40, 255)
 
-    def __init__(self, paddle: Paddle, screen: pygame.Surface):
+    def __init__(self, paddle: Paddle, screen: pygame.Surface, speed: int):
         self.ballX = int(screen.get_width()/2)
         self.ballY = int(screen.get_height()*0.8)
-        self.x_vel = 8
-        self.y_vel = -8
+        self.x_vel = speed
+        self.y_vel = -speed
         self.ball_radius = 10
-        self.max_x_vel = 10
+        self.max_x_vel = speed
         self.paddle = paddle
         self.screen = screen
 
     def show(self):
-
         pygame.draw.circle(self.screen, self.color,
                            (self.ballX, self.ballY), self.ball_radius)
 
@@ -38,7 +37,6 @@ class Ball():
             self.x_vel += self.max_x_vel * ratio
 
     def boundries(self):
-
         if self.ballY <= (0 + self.ball_radius):
             self.y_vel = -self.y_vel
         if self.ballX <= (0 + self.ball_radius):
@@ -47,7 +45,6 @@ class Ball():
             self.x_vel = -self.x_vel
 
     def limit_vel(self):
-
         if -self.max_x_vel > self.x_vel:
             self.x_vel = -self.max_x_vel
         elif self.x_vel > self.max_x_vel:

@@ -21,20 +21,21 @@ class Level():
             for j in range(int(screen.get_width()*0.1), int(screen.get_width()*0.9 - self.length)+1, self.length):
                 self.bricks.append([j, i])
                 self.random_color.append(random.choice(self.brick_colors))
+        self.bricks_with_colors = {}
+        for i in range(10, self.rows*(self.width), self.width):
+            row_color = random.choice(self.brick_colors)
+            for j in range(int(screen.get_width()*0.1), int(screen.get_width()*0.9 - self.length)+1, self.length):
+                brick_position = (j, i)  # Store as a tuple
+                self.bricks_with_colors[brick_position] = row_color
+
 
     def show(self):
-        num = 1
-        color_index = 1
-        for item in self.bricks:
-            pygame.draw.rect(self.screen, self.brick_colors[color_index-1], ((
-                item[0], item[1]), (self.length-self.spacing, self.width-self.spacing)))
-            num += 1
-            if num > color_index * self.rows_bricks:
-                color_index += 1
-
-    def update(self, cordinate):
-        pygame.draw.rect(self.screen, self.background_color, (cordinate,
-                                                              (self.length-self.spacing, self.width-self.spacing)))
+        # Change: Iterate through the dictionary and draw each brick with its stored color
+        for brick_position, brick_color in self.bricks_with_colors.items():
+            pygame.draw.rect(self.screen, brick_color, (
+                brick_position, (self.length-self.spacing, self.width-self.spacing)))
 
     def remove(self, brick):
-        self.bricks.remove(brick)
+        # Change: Use tuple for brick position
+        if brick in self.bricks_with_colors:
+            del self.bricks_with_colors[brick]
